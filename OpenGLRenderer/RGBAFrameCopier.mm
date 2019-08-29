@@ -16,11 +16,13 @@ NSString *const vertexShaderString = SHADER_STRING
 (
  attribute vec4 position;
  attribute vec2 texcoord;
+ attribute float zoom;
  varying vec2 v_texcoord;
  
  void main()
  {
-     gl_Position = position;
+//     gl_Position = position;
+     gl_Position = vec4(position.x * zoom, position.y * zoom, 0.0, 1.0);
      v_texcoord = texcoord.xy;
  }
 );
@@ -43,6 +45,7 @@ NSString *const rgbFragmentShaderString = SHADER_STRING
     
     GLuint                              filterProgram;
     GLint                               filterPositionAttribute;
+    GLint                               filterZoomAttribute;
     GLint                               filterTextureCoordinateAttribute;
     GLint                               filterInputTextureUniform;
     
@@ -93,6 +96,7 @@ NSString *const rgbFragmentShaderString = SHADER_STRING
     
     filterPositionAttribute = glGetAttribLocation(filterProgram, "position");
     filterTextureCoordinateAttribute = glGetAttribLocation(filterProgram, "texcoord");
+    filterZoomAttribute = glGetAttribLocation(filterProgram, "zoom");
     filterInputTextureUniform = glGetUniformLocation(filterProgram, "inputImageTexture");
     
     GLint status;
@@ -147,10 +151,14 @@ exit:
         1.0f, 0.0f,
     };
     
+    GLfloat zoom[] = {0.5,0.5,0.5,0.5};
+    
     glVertexAttribPointer(filterPositionAttribute, 2, GL_FLOAT, 0, 0, imageVertices);
     glEnableVertexAttribArray(filterPositionAttribute);
     glVertexAttribPointer(filterTextureCoordinateAttribute, 2, GL_FLOAT, 0, 0, noRotationTextureCoordinates);
     glEnableVertexAttribArray(filterTextureCoordinateAttribute);
+    glVertexAttribPointer(filterZoomAttribute, 1, GL_FLOAT, 0, 0, zoom);
+    glEnableVertexAttribArray(filterZoomAttribute);
     //制定将要绘制的纹理对象，并且传递给对应的FragmentShader
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _inputTexture);
