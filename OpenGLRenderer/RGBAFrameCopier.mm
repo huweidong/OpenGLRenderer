@@ -18,11 +18,13 @@ NSString *const vertexShaderString = SHADER_STRING
  attribute vec2 texcoord;
  attribute float zoom;
  varying vec2 v_texcoord;
+ uniform mat4 transformMatrix;
  
  void main()
  {
 //     gl_Position = position;
-     gl_Position = vec4(position.x * zoom, position.y * zoom, 0.0, 1.0);
+     gl_Position = transformMatrix * vec4(position.x * zoom, position.y * zoom, 0.0, 1.0);
+//     gl_Position = vec4(position.xyz * zoom, 1.0);
      v_texcoord = texcoord.xy;
  }
 );
@@ -46,6 +48,7 @@ NSString *const rgbFragmentShaderString = SHADER_STRING
     GLuint                              filterProgram;
     GLint                               filterPositionAttribute;
     GLint                               filterZoomAttribute;
+    GLint                               transformAttribute;
     GLint                               filterTextureCoordinateAttribute;
     GLint                               filterInputTextureUniform;
     
@@ -97,6 +100,7 @@ NSString *const rgbFragmentShaderString = SHADER_STRING
     filterPositionAttribute = glGetAttribLocation(filterProgram, "position");
     filterTextureCoordinateAttribute = glGetAttribLocation(filterProgram, "texcoord");
     filterZoomAttribute = glGetAttribLocation(filterProgram, "zoom");
+    transformAttribute = glGetUniformLocation(filterProgram, "transformMatrix");
     filterInputTextureUniform = glGetUniformLocation(filterProgram, "inputImageTexture");
     
     GLint status;
@@ -151,14 +155,31 @@ exit:
         1.0f, 0.0f,
     };
     
+    double angle = M_PI/4;
+    GLfloat moveX = 0.5;
+    GLfloat moveY = 0.5;
+    GLfloat transformMat[] = {
+        (GLfloat)cos(angle), (GLfloat)sin(angle), 0.0f, 0.0f,
+        -(GLfloat)sin(angle), (GLfloat)cos(angle), 0.0f, 0.0f,
+        0.0f, 0.0f, 1.0f, 0.0f,
+        moveX, moveY, 0.0f, 1.0f,
+    };
+    
     GLfloat zoom[] = {0.5,0.5,0.5,0.5};
     
     glVertexAttribPointer(filterPositionAttribute, 2, GL_FLOAT, 0, 0, imageVertices);
     glEnableVertexAttribArray(filterPositionAttribute);
+    
     glVertexAttribPointer(filterTextureCoordinateAttribute, 2, GL_FLOAT, 0, 0, noRotationTextureCoordinates);
     glEnableVertexAttribArray(filterTextureCoordinateAttribute);
+    
     glVertexAttribPointer(filterZoomAttribute, 1, GL_FLOAT, 0, 0, zoom);
     glEnableVertexAttribArray(filterZoomAttribute);
+    
+    glUniformMatrix4fv(transformAttribute, 1, GL_FALSE, (GLfloat *)&transformMat);
+//    glVertexAttribPointer(transformAttribute, 4, GL_FLOAT, 0, 0, transformMat);
+    glEnableVertexAttribArray(transformAttribute);
+    
     //制定将要绘制的纹理对象，并且传递给对应的FragmentShader
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _inputTexture);
